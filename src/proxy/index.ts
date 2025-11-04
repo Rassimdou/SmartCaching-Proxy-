@@ -1,7 +1,5 @@
 import * as http from 'http';
-import { hostname } from 'os';
-import path from 'path';
-import { stringify } from 'querystring';
+
 
 
 
@@ -10,7 +8,7 @@ import { stringify } from 'querystring';
   const PROXY_PORT = 8080;
   const backendURL = 'http://localhost:3000';
 
-  const proxyServer = http.createServer(async(req: http.IncomingMessage, res: http.ServerResponse) => {
+const proxyServer = http.createServer(async(req: http.IncomingMessage, res: http.ServerResponse) => {
       const time = Date.now()
       console.log(`Proxy received : ${req.method} from ${req.url}`);
       try {
@@ -55,7 +53,7 @@ import { stringify } from 'querystring';
       }
         
   });
-    
+  
 
   proxyServer.listen(PROXY_PORT, () => {
       console.log('='.repeat(50));

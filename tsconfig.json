@@ -10,6 +10,6 @@
     "forceConsistentCasingInFileNames": true,
     "types": ["node"]
   },
-  "include": ["*.ts"],
+  "include": ["*.ts", "proxy/simple_proxy.ts", "test-backend/test-backend.ts"],
   "exclude": ["node_modules", "dist"]
 }
