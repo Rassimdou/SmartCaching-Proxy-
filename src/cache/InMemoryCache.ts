@@ -1,15 +1,16 @@
-import {craeteHash, createHash} from 'crypto'
+import { createHash} from 'crypto'
+import { IncomingHttpHeaders } from 'http';
 
 
 interface CachedResponse{
     statusCode: number;
-    headers: Record<string, string | string[]>;
+    headers: IncomingHttpHeaders ;
     body: Buffer | string;
     timestamp: number;
     ttl?: number;
 }
 
-class MemoryCache {
+export class MemoryCache {
     private storage: Map<string, CachedResponse>;
 
 
@@ -46,7 +47,7 @@ class MemoryCache {
         return Date.now()-entry.timestamp > entry.ttl;  
     }
 
-    getStatr(){
+    getStats(){
         return{
             size: this.storage.size,
             keys: Array.from(this.storage.keys())
@@ -56,11 +57,18 @@ class MemoryCache {
 }
 
 
-const memoryCache = new MemoryCache();
 
-function createCashKey(method:string , url: string , header: Record<string , string | string[]> ): string {
-    const headerString = JSON.stringify(header);
+export function createCacheKey(method: string, url: string, headers: IncomingHttpHeaders): string {
+    // Convert IncomingHttpHeaders to the expected type
+    const cleanedHeaders: Record<string, string | string[]> = {};
+    
+    for (const [key, value] of Object.entries(headers)) {
+        if (value !== undefined) {
+            cleanedHeaders[key] = value;
+        }
+    }
+    
+    const headerString = JSON.stringify(cleanedHeaders);
     const hashedHeader = createHash('md5').update(headerString).digest('hex');
     return `${method}:${url}:${hashedHeader}`;
-
 }
