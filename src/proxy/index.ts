@@ -1,6 +1,6 @@
 import * as http from 'http';
 import { MemoryCache } from '../cache/InMemoryCache';
-import { createCacheKey } from '../cache/InMemoryCache';
+import { createCacheKey } from '../utils/CacheKeyGen';
 
 const memoryCache = new MemoryCache();
 
@@ -54,7 +54,7 @@ const proxyServer = http.createServer(async (req: http.IncomingMessage, res: htt
                         headers: backendRes.headers,
                         body: body,
                         timestamp: Date.now(),
-                        ttl: 30000
+                        ttl: 300000000
                     };
                     memoryCache.set(cacheKey, cacheEntry);
                     console.log(`Stored in cache: ${cacheKey}`);
