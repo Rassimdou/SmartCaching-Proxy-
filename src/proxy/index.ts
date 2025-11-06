@@ -1,91 +1,73 @@
 import * as http from 'http';
 import { MemoryCache } from '../cache/InMemoryCache';
-import { createCacheKey } from '../utils/CacheKeyGen';
+import { CacheMiddleware } from '../middleware/CacheMiddleware';
+import { RequestHandler } from './requestHandler';
+import { ResponseHandler } from './responseHandler';
 
 const memoryCache = new MemoryCache();
+const cacheMiddleware = new CacheMiddleware(memoryCache);
+const requestHandler = new RequestHandler('http://localhost:3000');
 
 const PROXY_PORT = 8080;
 const backendURL = 'http://localhost:3000';
 
-const proxyServer = http.createServer(async (req: http.IncomingMessage, res: http.ServerResponse) => {
+const proxyServer = http.createServer((req: http.IncomingMessage, res: http.ServerResponse) => {
     const startTime = Date.now();
 
     console.log(`Proxy received : ${req.method} from ${req.url}`);
-    try {
-        const URL = req.url;
 
-        {/*Search in the cache*/}
-        const cacheKey = createCacheKey(req.method!, req.url!, req.headers);
-        const cachedResponse = memoryCache.get(cacheKey);
+    try {
+        // Special endpoint for stats
+        if (req.url === '/__proxy/stats') {
+            const stats = cacheMiddleware.getStats();
+            return ResponseHandler.sendJSON(res, stats);
+        }
+
+        // Special endpoint for clearing cache
+        if (req.url === '/__proxy/clear' && req.method === 'POST') {
+            cacheMiddleware.clearCache();
+            return ResponseHandler.sendJSON(res, { message: 'Cache cleared' });
+        }
+
+        // Step 1: Search in the cache
+        const cachedResponse = cacheMiddleware.checkCache(req);
 
         if (cachedResponse) {
-            console.log(`Cache HIT for : ${cacheKey}`);
-            res.writeHead(cachedResponse.statusCode, cachedResponse.headers);
-            res.end(cachedResponse.body);
+            // Cache HIT - send cached response
+            ResponseHandler.sendCached(res, cachedResponse);
             return;
         }
-        console.log(`Cache MISS for: ${cacheKey}`);
 
+        // Step 2: Cache MISS - forward to backend (using callbacks, no promises!)
+        requestHandler.forward(
+            req,
+            res,
+            // Success callback
+            (backendRes, body) => {
+                // Step 3: Store in cache
+                cacheMiddleware.storeInCache(req, {
+                    statusCode: backendRes.statusCode ?? 500,
+                    headers: backendRes.headers,
+                    body: body
+                });
 
-        {/*Cache MISS SEND TO BACKEND*/}
-        const backendOption = {
-            hostname: "localhost",
-            port: 3000,
-            path: URL,
-            method: req.method,
-            headers: req.headers,
-        };
-
-        const backendReq = http.request(backendOption, (backendRes) => {
-            console.log(`Backend responded with: ${backendRes.statusCode}`);
-
-
-            const chunks: Buffer[] = [];
-            backendRes.on('data', (chunk) => chunks.push(chunk));
-            backendRes.on('end', () => {
-                const body = Buffer.concat(chunks);
-                const responseTime = Date.now() - startTime;
-
-                
-                {/*Save data in the Cache for another GET REQUESTS*/}
-                if (req.method === 'GET' && backendRes.statusCode === 200) {
-                    const cacheEntry = {
-                        statusCode: backendRes.statusCode!,
-                        headers: backendRes.headers,
-                        body: body,
-                        timestamp: Date.now(),
-                        ttl: 300000000
-                    };
-                    memoryCache.set(cacheKey, cacheEntry);
-                    console.log(`Stored in cache: ${cacheKey}`);
-                    console.log(`Cache stats:`, memoryCache.getStats());
-                }
-
-                console.log(`Response time: ${responseTime}ms (from backend)`);
-                res.writeHead(backendRes.statusCode ?? 500, backendRes.headers);
-                res.end(body);
-            });
-        });
-
-        if (req.method === 'POST' || req.method === 'PUT' || req.method === 'PATCH') {
-            req.pipe(backendReq);
-        } else {
-            backendReq.end();
-        }
-
-        backendReq.on('error', (err) => {
-            console.error('Backend error:', err.message);
-            res.writeHead(502, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({
-                error: 'Backend service unavailable',
-                message: err.message
-            }));
-        });
+                // Step 4: Send response to client
+                ResponseHandler.sendFresh(res, {
+                    statusCode: backendRes.statusCode ?? 500,
+                    headers: backendRes.headers,
+                    body: body
+                });
+            },
+            // Error callback
+            (err) => {
+                console.error('Proxy error:', err);
+                ResponseHandler.sendError(res, err);
+            }
+        );
 
     } catch (error) {
         console.error('Proxy error:', error);
-        res.writeHead(500, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'Internal Server Error' }));
+        ResponseHandler.sendError(res, error);
     }
 });
 

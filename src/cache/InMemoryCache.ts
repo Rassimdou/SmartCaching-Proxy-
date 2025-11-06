@@ -2,7 +2,7 @@ import { createHash} from 'crypto'
 import { IncomingHttpHeaders } from 'http';
 
 
-interface CachedResponse{
+export interface CachedResponse{
     statusCode: number;
     headers: IncomingHttpHeaders ;
     body: Buffer | string;
@@ -38,7 +38,7 @@ export class MemoryCache {
     }
 
 
-    clear(key:string):void{
+    clear():void{
         this.storage.clear();
     }
 
