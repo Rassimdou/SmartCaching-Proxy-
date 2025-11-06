@@ -1,5 +1,5 @@
 import * as http from 'http';
-import { MemoryCache } from '../cache/InMemoryCache';
+import { MemoryCache } from '../cache/LRU_cache';
 import { CacheMiddleware } from '../middleware/CacheMiddleware';
 import { RequestHandler } from './requestHandler';
 import { ResponseHandler } from './responseHandler';

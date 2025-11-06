@@ -4,7 +4,7 @@ export class MemoryCache {
     private storage: Map<string, CachedResponse>;
     private readonly capacity :number;
 
-    constructor(capacity:number = 100){
+    constructor(capacity:number = 10){
         this.storage = new Map()
         this.capacity = capacity
     }

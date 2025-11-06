@@ -1,5 +1,6 @@
 import * as http from 'http';
-import { MemoryCache, CachedResponse } from '../cache/InMemoryCache';
+import { MemoryCache } from '../cache/LRU_cache';
+import { CachedResponse } from '../cache/InMemoryCache';
 import {createCacheKey} from '../utils/CacheKeyGen'
 
 interface BackendResponse {
@@ -10,7 +11,7 @@ interface BackendResponse {
 
 export class CacheMiddleware {
     private cache: MemoryCache;
-
+  
     constructor(cache: MemoryCache) {
         this.cache = cache;
     }

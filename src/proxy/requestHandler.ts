@@ -8,7 +8,7 @@ export class RequestHandler {
     }
 
     /**
-     * Forward request to backend server - USING YOUR EXACT LOGIC (NO PROMISES!)
+     * Forward request to backend server 
      */
     forward(
         req: http.IncomingMessage, 
@@ -18,7 +18,7 @@ export class RequestHandler {
     ): void {
         const startTime = Date.now();
 
-        // Your exact backendOption logic
+      
         const backendOption = {
             hostname: "localhost",
             port: 3000,
@@ -30,7 +30,7 @@ export class RequestHandler {
         const backendReq = http.request(backendOption, (backendRes) => {
             console.log(`Backend responded with: ${backendRes.statusCode}`);
 
-            // Your exact chunks logic
+            //  chunks logic
             const chunks: Buffer[] = [];
             backendRes.on('data', (chunk) => chunks.push(chunk));
             backendRes.on('end', () => {
@@ -44,14 +44,14 @@ export class RequestHandler {
             });
         });
 
-        // Your exact POST/PUT/PATCH logic
+     
         if (req.method === 'POST' || req.method === 'PUT' || req.method === 'PATCH') {
             req.pipe(backendReq);
         } else {
             backendReq.end();
         }
 
-        // Your exact error handling
+        
         backendReq.on('error', (err) => {
             console.error('Backend error:', err.message);
             onError(err);
