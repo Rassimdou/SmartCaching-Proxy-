@@ -59,13 +59,13 @@ const proxyServer = http.createServer(async (req: http.IncomingMessage, res: htt
 
         if (cachedResponse) {
             // Cache HIT or coalesced response
-            console.log(`⚡ Response time: ${Date.now() - startTime}ms`);
+            console.log(` Response time: ${Date.now() - startTime}ms`);
             ResponseHandler.sendCached(res, cachedResponse);
             return;
         }
 
         //  If coalescing is disabled and cache miss, use normal flow
-        console.log(`🔄 Forwarding to backend (normal flow)`);
+        console.log(`Forwarding to backend (normal flow)`);
         requestHandler.forward(
             req,
             res,
