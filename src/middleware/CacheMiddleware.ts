@@ -11,12 +11,72 @@ interface BackendResponse {
 
 export class CacheMiddleware {
     private cache: MemoryCache;
-  
+    private pendingRequests: Map<string , {
+        promise: Promise<CachedResponse>;
+        timstamp: number;
+        waitCount: number;
+    }>
+    private CoalescingEnabled: boolean = false ;
     constructor(cache: MemoryCache) {
         this.cache = cache;
+        this.pendingRequests = new Map();
     }
 
-    
+        enableCoalescing():void {
+            this.CoalescingEnabled = true
+            console.log("Coalescing method is active now");
+        }
+
+        disableCoalescing():void {
+            this.CoalescingEnabled = false
+            this.pendingRequests.clear(); //clear pending requests 
+            console.log("Coalescing method is inactive");
+        }
+
+        //coalescing method 
+        async CoalescingMethod(req:http.IncomingMessage) : Promise<CachedResponse | null>{
+            if(!this.CoalescingEnabled){
+                //check it normal way cz the method is disabled
+                return this.checkCache(req);
+            }
+            const cacheKey = createCacheKey(req.method! , req.url! , req.headers);
+            
+            //normal check
+            const cached = this.cache.get(cacheKey);
+            if(cached){
+                console.log(`cache HIT:${cacheKey}`);
+                return cached;
+            }
+            //coaleching check 
+            if(this.pendingRequests.has(cacheKey)){
+                const pending = this.pendingRequests.get(cacheKey)!;
+                pending.waitCount++;
+                console.log(`Coalescing requests: ${cacheKey} (${pending.waitCount} waiting)`);
+                return await pending.promise;
+            }
+
+            //create backend request
+            console.log(`New backend request ${cacheKey}`);
+            const fetchPromise = this.createBackendPromise(req , cacheKey);
+            this.pendingRequests.set(cacheKey , {
+                promise: fetchPromise,
+                timstamp:Date.now(),
+                waitCount: 0
+
+            });
+
+            try {
+                const result = await fetchPromise;
+                return result;
+            } finally {
+                this.pendingRequests.delete(cacheKey)
+            }
+        }
+        
+
+
+
+
      //Check if request exists in cache
     checkCache(req: http.IncomingMessage): CachedResponse | null {
        

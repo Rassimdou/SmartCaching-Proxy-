@@ -17,13 +17,13 @@ const proxyServer = http.createServer((req: http.IncomingMessage, res: http.Serv
     console.log(`Proxy received : ${req.method} from ${req.url}`);
 
     try {
-        // Special endpoint for stats
+        // enpoints for stats
         if (req.url === '/__proxy/stats') {
             const stats = cacheMiddleware.getStats();
             return ResponseHandler.sendJSON(res, stats);
         }
 
-        // Special endpoint for clearing cache
+        // endpoint for clearing cache
         if (req.url === '/__proxy/clear' && req.method === 'POST') {
             cacheMiddleware.clearCache();
             return ResponseHandler.sendJSON(res, { message: 'Cache cleared' });
@@ -38,20 +38,20 @@ const proxyServer = http.createServer((req: http.IncomingMessage, res: http.Serv
             return;
         }
 
-        // Step 2: Cache MISS - forward to backend (using callbacks, no promises!)
+        // cache miss > send to backend 
         requestHandler.forward(
             req,
             res,
             // Success callback
             (backendRes, body) => {
-                // Step 3: Store in cache
+                // Store in cache
                 cacheMiddleware.storeInCache(req, {
                     statusCode: backendRes.statusCode ?? 500,
                     headers: backendRes.headers,
                     body: body
                 });
 
-                // Step 4: Send response to client
+                //  Send response to client
                 ResponseHandler.sendFresh(res, {
                     statusCode: backendRes.statusCode ?? 500,
                     headers: backendRes.headers,
