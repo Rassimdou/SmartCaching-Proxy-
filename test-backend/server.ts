@@ -28,9 +28,9 @@ app.get('/api/data3', (req: express.Request, res: express.Response) => {
 });
 
 app.get('/api/data4', (req: express.Request, res: express.Response) => {
-    res.json({ data4: {  // ✅ Fixed: data3 → data4
-        id: 4,           // ✅ Fixed: id:3 → id:4
-        name: 'test4',   // ✅ Fixed: test3 → test4
+    res.json({ data4: {  
+        id: 4,          
+        name: 'test4',   
         password: 'paswd'
     } });
 });
