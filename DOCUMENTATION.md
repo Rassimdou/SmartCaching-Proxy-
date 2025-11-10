@@ -25,7 +25,7 @@ Client → Proxy (Port 8080) → CacheMiddleware → LRU Cache → Backend (Port
 
 ## Key Components
 
-### 1. LRU Cache (`src/cache/LRU_cache.ts`)
+### 1. LRU Algorithm Cache 
 
 **Purpose:** In-memory cache with capacity limit (default: 10 entries)
 
@@ -36,11 +36,11 @@ Client → Proxy (Port 8080) → CacheMiddleware → LRU Cache → Backend (Port
 
 **Key Feature:** Every cache access updates the "recently used" order
 
-### 2. Cache Middleware (`src/middleware/CacheMiddleware.ts`)
+### 2. Cache Middleware
 
 **Purpose:** Core logic for caching and request coalescing
 
-**Main Method:** `coalescingMethod(req)`
+**Main Method:** `coalescingMethod(req)` solving "cache stampede" issue
 - Checks cache first
 - If cache miss and coalescing enabled → checks for pending identical requests
 - If pending → waits for existing backend call
@@ -50,7 +50,7 @@ Client → Proxy (Port 8080) → CacheMiddleware → LRU Cache → Backend (Port
 - Only caches: GET requests with HTTP 200 status
 - Cache key includes: HTTP method + URL + headers hash
 
-### 3. Request Handler (`src/proxy/requestHandler.ts`)
+### 3. Request Handler 
 
 **Purpose:** Forwards requests to backend server
 
@@ -58,7 +58,7 @@ Client → Proxy (Port 8080) → CacheMiddleware → LRU Cache → Backend (Port
 - `forward()` - Callback-based (normal flow)
 - `forwardPromise()` - Promise-based (for coalescing)
 
-### 4. Cache Key Generator (`src/utils/CacheKeyGen.ts`)
+### 4. Cache Key Generator 
 
 **Purpose:** Creates unique cache keys
 
